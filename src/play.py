@@ -1,11 +1,13 @@
-from discord import Member
+from discord import Member, TextChannel
 from discord.ext.commands import Context
-from .exceptions import NoSetException
+from .exceptions import NoSetException, NoPlayersException
 
 class GameLogic:
     def __init__(self):
         self.__players = []
         self.__setStarted = False
+        self.__spokenWords = []
+        self.__gameStarted = False
 
     @property
     def setStarted(self):
@@ -18,7 +20,15 @@ class GameLogic:
 
         self.__setStarted = value
 
-    def AddPlayer(self, player: Member) -> bool:
+    @property
+    def players(self):
+        return self.__players
+
+    @property
+    def gameStarted(self):
+        return self.__gameStarted
+
+    async def AddPlayer(self, player: Member) -> bool:
         """
         Add player to players list
         """
@@ -28,6 +38,11 @@ class GameLogic:
 
         self.__players.append(player)
         
+        return True
+
+    def RemovePlayer(self, player: Member) -> bool:
+        self.__players.remove(player)
+
         return True
 
     def StartSet(self) -> bool:
@@ -41,10 +56,23 @@ class GameLogic:
         return True
 
     async def NextPlayer(self, ctx: Context, prew: Member):
-        nextPlayerIndex = self.__players.index(prew) + 1
-        if nextPlayerIndex == len(self.__players) - 1:
+        nextPlayerIndex = self.players.index(prew) + 1
+        if nextPlayerIndex == len(self.players) - 1:
             nextPlayerIndex = 0
 
-        nextPlayer = self.__players[nextPlayerIndex]
+        nextPlayer = self.players[nextPlayerIndex]
 
         await ctx.send(f'{nextPlayer.mention} your move!')
+
+    def SetGameChannel(self, channel: TextChannel):
+        self.__gameChannel = channel
+
+    async def StartGame(self) -> bool:
+        if not self.players:
+            raise NoPlayersException("Game doesn't have players")
+
+        self.__gameStarted = False
+
+        return True
+
+Game = GameLogic()

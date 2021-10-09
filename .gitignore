@@ -1,2 +1,4 @@
 server
 tests.py
+src/__pycache__
+words.db

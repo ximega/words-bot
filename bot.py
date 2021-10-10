@@ -1,7 +1,7 @@
+from inspect import GEN_CLOSED
 import discord
 from discord.ext import commands
 import sqlite3
-
 from discord.ext.commands.core import has_permissions
 from src.exceptions import NoPlayersException, NoSetException
 from src.play import Game, GameLogic
@@ -10,6 +10,7 @@ from server.config import TOKEN
 import logging
 from discord.ext.commands import errors
 import asyncio
+import time
 
 
 logging.basicConfig(level = logging.INFO)
@@ -124,13 +125,19 @@ async def on_message(message):
                 await message.channel.send(f'Ваше слово не начинается на букву {Game.lastLetter}')
                 return
 
+            # if word has already been said
+            if (message.content in Game.spokenWords)  and (Game.spokenWords):
+                await message.channel.send(f'Это слово уже было')
+                return
+
             # say for any move
-            await message.channel.send(f'Cлово: {message.content}, последняя буква: {lastLetter}')
+            await message.channel.send(f'Cлово: **{message.content}**, последняя буква: **{lastLetter}**')
             await message.channel.send(f'Теперь ходит {nextPlayer.mention}')
 
             # change game settings
             Game.lastLetter = lastLetter
             Game.prewSaid += 1
+            Game.appendSpokenWord(message.content)
         
 @client.event
 async def on_command_error(ctx, error):

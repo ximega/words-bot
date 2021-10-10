@@ -8,6 +8,9 @@ class GameLogic:
         self.__setStarted = False
         self.__spokenWords = []
         self.__gameStarted = False
+        self.__gameChannel = None
+        self.prewSaid = -1
+        self.lastLetter = ''
 
     @property
     def setStarted(self):
@@ -27,6 +30,17 @@ class GameLogic:
     @property
     def gameStarted(self):
         return self.__gameStarted
+
+    @property
+    def gameChannel(self):
+        return self.__gameChannel
+
+    @property
+    def spokenWords(self):
+        return self.__spokenWords
+
+    def appendSpokenWord(self, word):
+        self.__spokenWords.append(word)
 
     async def AddPlayer(self, player: Member) -> bool:
         """
@@ -55,14 +69,14 @@ class GameLogic:
 
         return True
 
-    async def NextPlayer(self, ctx: Context, prew: Member):
-        nextPlayerIndex = self.players.index(prew) + 1
-        if nextPlayerIndex == len(self.players) - 1:
-            nextPlayerIndex = 0
+    async def NextPlayer(self, ctx: Context, prew: Member) -> Member:
+        prewIndex = self.players.index(prew)
+        if prewIndex == len(self.players) - 1:
+            prewIndex = -1
 
-        nextPlayer = self.players[nextPlayerIndex]
+        nextPlayer = self.players[prewIndex + 1]
 
-        await ctx.send(f'{nextPlayer.mention} your move!')
+        return nextPlayer
 
     def SetGameChannel(self, channel: TextChannel):
         self.__gameChannel = channel
@@ -71,7 +85,7 @@ class GameLogic:
         if not self.players:
             raise NoPlayersException("Game doesn't have players")
 
-        self.__gameStarted = False
+        self.__gameStarted = True
 
         return True
 

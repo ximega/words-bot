@@ -89,4 +89,9 @@ class GameLogic:
 
         return True
 
+    async def FinishGame(self) -> bool:
+        self.__gameStarted = False
+
+        return True
+
 Game = GameLogic()

@@ -1,16 +1,13 @@
-from inspect import GEN_CLOSED
 import discord
 from discord.ext import commands
-import sqlite3
-from discord.ext.commands.core import has_permissions
+from discord.member import Member
 from src.exceptions import NoPlayersException, NoSetException
-from src.play import Game, GameLogic
+from src.play import Game
 from server.sql import Sql
 from server.config import TOKEN
 import logging
 from discord.ext.commands import errors
 import asyncio
-import time
 
 
 logging.basicConfig(level = logging.INFO)
@@ -88,6 +85,25 @@ async def startgame(ctx):
     except NoPlayersException:
         ctx.send('Не достотачно игроков!')
 
+@client.command()
+@commands.has_permissions(administrator=True)
+async def kick(ctx, player: Member):
+    Game.RemovePlayer(player)
+
+    if len(Game.players) == 1:
+        await ctx.send(f'{Game.players[0]} **выиграл!**')
+
+        Game.FinishGame()
+        Sql.InsertPlayerWin(player)
+
+@client.command()
+async def top(ctx, page = 1):
+    topPlayers = Sql.GetTopPlayers(client)
+
+    for i in range(0, page + 1):
+        start = page
+        stop = 0
+
 @client.event
 async def on_message(message):
     await client.process_commands(message)
@@ -115,8 +131,8 @@ async def on_message(message):
 
         if message.author == Game.players[whoShouldSayIndex]:
             # define last letter and first letter in word
-            lastLetter = message.content[::][-1]
-            firstLetter = message.content[::][0]
+            lastLetter = message.content[::][-1].lower()
+            firstLetter = message.content[::][0].lower()
             # define next player
             nextPlayer = await Game.NextPlayer(message.channel, message.author)
 
@@ -126,18 +142,18 @@ async def on_message(message):
                 return
 
             # if word has already been said
-            if (message.content in Game.spokenWords)  and (Game.spokenWords):
+            if (message.content.lower() in Game.spokenWords)  and (Game.spokenWords):
                 await message.channel.send(f'Это слово уже было')
                 return
 
             # say for any move
-            await message.channel.send(f'Cлово: **{message.content}**, последняя буква: **{lastLetter}**')
+            await message.channel.send(f'Cлово: **{message.content}**, последняя буква: **{lastLetter.upper()}**')
             await message.channel.send(f'Теперь ходит {nextPlayer.mention}')
 
             # change game settings
             Game.lastLetter = lastLetter
             Game.prewSaid += 1
-            Game.appendSpokenWord(message.content)
+            Game.appendSpokenWord(message.content.lower())
         
 @client.event
 async def on_command_error(ctx, error):

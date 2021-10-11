@@ -1,10 +1,11 @@
+from discord.utils import get
 import discord
 from discord.ext import commands
 from discord.member import Member
 from src.exceptions import NoPlayersException, NoSetException
 from src.play import Game
 from server.sql import Sql
-from server.config import TOKEN
+from server.config import TOKEN, TOKEN_T
 import logging
 from discord.ext.commands import errors
 import asyncio
@@ -18,7 +19,7 @@ client = commands.Bot(command_prefix = '$', intents = intents, owner_id = 673198
 
 @client.event
 async def on_ready():
-    print('\n\n\n\n\n' + '#'*100 + f'\nBot connected on TOKEN: {TOKEN}')
+    print('\n\n\n\n\n' + '#'*100 + f'\nBot connected on TOKEN (hashed): {TOKEN_T}')
 
     await client.change_presence(activity = discord.Game(name = '$help'), status = discord.Status.dnd)
 
@@ -97,13 +98,26 @@ async def kick(ctx, player: Member):
         Sql.InsertPlayerWin(player)
 
 @client.command()
-async def top(ctx, page = 1):
+async def top(ctx):
+    top = discord.Embed()
+    top.color = discord.Color.from_rgb(25, 255, 54)
+    top.add_field(name = 'Место | Пинг', value = 'Побед')
+
     topPlayers = Sql.GetTopPlayers(client)
 
-    for i in range(0, page + 1):
-        start = page
-        stop = 0
+    if len(topPlayers[1]) > 10:
+        for i in range(11):
+            for guild in client.guilds:
+                player = get(guild.members, id = topPlayers[1][i])
 
+            top.add_field(name = f'{i + 1} {player.mention}', value = f'{topPlayers[0][i][1]}', inline = False)
+
+    authorPlayer = Sql.getAuthorInTop(ctx.author)
+
+    top.add_field(name = 'Ваших побед: ', value = f'{authorPlayer[1]}', inline = False)
+
+    await ctx.send(embed = top)
+    
 @client.event
 async def on_message(message):
     await client.process_commands(message)
